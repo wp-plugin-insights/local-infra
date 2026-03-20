@@ -4,28 +4,16 @@ VALID_CATEGORIES = {"basic", "security", "ai"}
 
 
 def setup_version_update_topology(channel) -> None:
-    channel.exchange_declare(
-        exchange="version_updates",
-        exchange_type="topic",
-        durable=True,
-    )
-
     # All-events exchange
     channel.exchange_declare(
         exchange="version_updates.all",
         exchange_type="fanout",
         durable=True,
     )
-    channel.exchange_bind(
-        destination="version_updates.all",
-        source="version_updates",
-        routing_key="version.#",
-    )
 
     # Category exchanges
     for category in VALID_CATEGORIES:
         exchange_name = f"version_updates.{category}"
-        routing_key = f"version.{category}"
 
         channel.exchange_declare(
             exchange=exchange_name,
@@ -33,10 +21,11 @@ def setup_version_update_topology(channel) -> None:
             durable=True,
         )
 
+    # Bind all category exchanges to the all-events exchange
+    for category in VALID_CATEGORIES:
         channel.exchange_bind(
-            destination=exchange_name,
-            source="version_updates",
-            routing_key=routing_key,
+            destination=f"version_updates.{category}",
+            source="version_updates.all",
         )
 
 
